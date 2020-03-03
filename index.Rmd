@@ -1,4 +1,124 @@
 ---
-title: "Untitled"
-output: html_document
+title: "Weekly Report"
+date: "2020-02-24 ~ 2020-03-01"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    theme: united
+    highlight: tango
+    
+runtime: shiny
 ---
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(ggplot2)
+library(rbokeh)
+library(plotly)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(DT)
+library(formattable)
+library(tidyverse)
+library(plotly)
+library(extrafont)
+library(showtext)
+library(ggthemes)
+library(scales)
+library(rCharts)
+library(tibble)
+library(viridis)
+library(highcharter)
+library(forcats)
+library(ggvis)
+library(gapminder)
+library(hrbrthemes)
+library(readr)
+library(zoo)
+library(hms)
+library(lubridate)
+
+source("https://raw.githubusercontent.com/janhove/janhove.github.io/master/RCode/sortLvls.R")
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# weekly tv 2049 primetime 
+
+tv <- read_csv("data/tv_2049.csv", locale = locale('ko', encoding = 'euc-kr'))
+tv$DAYS <- as.factor(tv$DAYS)
+tv$CH <- as.factor(tv$CH)
+
+levels(tv$DAYS) <- c("Fri", "Thur", "Wed", "Mon", "Sun", "Sat", "Tues")
+tv$DAYS <- sortLvls.fnc(tv$DAYS, c(5, 6, 1, 2, 3, 7, 4))
+tv$CH <- sortLvls.fnc(tv$CH, c(4, 3, 2, 6, 1, 5))
+myPal2 <- c("#00b0f0", "#d03f3f", "#f79646", "#00b050", "#ff66ff", "#2400b0")
+
+# tv top program
+
+tv_top <- read_csv("data/tv2049_top.csv", locale = locale('ko', encoding = 'euc-kr'))
+tv_top[is.na(tv_top)] <- 0
+tv_top$color <- with(tv_top, ifelse(CH=="SBS", "blue", "black"))
+
+# tv 2049 put 
+
+put <- read_csv("data/put.csv", locale = locale('ko', encoding = 'euc-kr'))
+put$DAYS <- as.factor(put$DAYS)
+#put$WEEK_CATE <- as.factor(put$WEEK_CATE)
+#put$WEEK_CATE <- sortLvls.fnc(put$WEEK_CATE, c(2, 1))
+put$WEEK <- as.factor(put$WEEK)
+levels(put$DAYS) <- c("Fri", "Thur", "Wed", "Mon", "Sun", "Sat", "Tues")
+put$DAYS <- sortLvls.fnc(put$DAYS, c(5, 6, 1, 2, 3, 7, 4))
+```
+## 2049PUT {.tabset}
+### Sun
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+put %>%
+  filter(DAYS == "Sun") %>%
+  group_by(WEEK, DAYS, TIME) %>%
+  summarise(TOTAL = sum(PUT)) %>%
+  ungroup() %>%
+  ggplot(aes(x = TIME, y = TOTAL)) + geom_line(aes(group = WEEK, color = WEEK)) + theme_minimal() + theme(axis.text.x = element_text(angle=90, hjust=1)) + xlab("") + ylab("") -> p
+
+ggplotly(p)
+```
+### Sat
+```{r}
+head(p)
+```
+
+## CHANNEL
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+tv %>%
+  filter(TARGET == "P2049") %>%
+  ggplot(aes(WEEK, RATING, text=paste("CHANNEL: ", CH,
+                                     "<br>WEEK: ", WEEK,
+                                     "<br>2049: ", RATING))) + geom_line(aes(group=CH, color=CH)) + 
+  facet_grid(TARGET~DAYS, scales = "free", switch = "y") + theme_minimal() + theme(axis.text.x = element_text(angle=90, hjust=1)) + xlab("") + ylab("") + scale_color_manual(values = myPal2) -> p
+
+ggplotly(p, tooltip = "text") %>% 
+  layout(legend = list(orientation = "h", x = 0.5, y = 1.2))
+```
+
+## TOP PROGRAM
+
+```{r, echo=FALSE}
+selectInput("filter", label = "WEEK:", choices = unique(tv_top$WEEK))
+
+datatable(tv_top, class = 'cell-border stripe', rownames = TRUE, 
+          options = list(autowidth = TRUE, pageLength = 20, columnDefs = list(list(targets = c(1,9), visible = FALSE)))) %>%
+  formatStyle("CH", valueColumns = "color", Color = JS("value")) %>%
+  formatStyle("PROGRAM", valueColumns = "color", Color = JS("value")) %>%
+  formatStyle("P2049", fontWeight = 'bold') %>%
+  formatRound("P2049", 1) %>%
+  formatRound("GENZ", 1) %>%
+  formatRound("Millennial", 1) %>%
+  formatRound("GENX", 1) %>%
+  formatRound("GEN386", 1)
+
+```

@@ -3,8 +3,8 @@ name: "my-website"
 navbar:
   title: "TV Content Consumtion"
   left:
-    - text: "Home"
+    - text: "TV"
       href: index.html
-    - text: "About"
+    - text: "SMR"
       href: about.html
 ---
